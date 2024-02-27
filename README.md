@@ -1,2 +1,1 @@
-# SPADE
-SPADE: SPoofing Area DEtection
+# SPADE: SPoofing Area DEtection
