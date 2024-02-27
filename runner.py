@@ -72,8 +72,8 @@ class Runner():
         for mtrc in self.monitor.keys():
             assert mtrc in self.metrics.keys()
 
-            if (self.monitor[mtrc]['mode'] == 'min' and self.metrics[mtrc] <= self.monitor[mtrc]['record']) or \
-               (self.monitor[mtrc]['mode'] == 'max' and self.metrics[mtrc] >= self.monitor[mtrc]['record']):
+            if (self.monitor[mtrc]['mode'] == 'min' and self.metrics[mtrc] < self.monitor[mtrc]['record']) or \
+               (self.monitor[mtrc]['mode'] == 'max' and self.metrics[mtrc] > self.monitor[mtrc]['record']):
 
                 self.monitor[mtrc]['record'] = self.metrics[mtrc]
                 self.monitor[mtrc]['count']  = 0
