@@ -1,26 +1,26 @@
 exp_path: 'exp'
 
 train_dataset_args:
-    data_path : '/home/hckuo/project/spade/data/HAD/HAD_train/train'
-    data_list : '/home/hckuo/project/spade/data/HAD/HAD_train/HAD_train_label.txt'
+    data_path : '/work/hckuo145/SPADE/data/HAD/HAD_train/train'
+    data_list : '/work/hckuo145/SPADE/data/HAD/HAD_train/HAD_train_label.txt'
     frame_size: 400
     frame_rate: 320
 
 valid_dataset_args:
-    data_path : '/home/hckuo/project/spade/data/HAD/HAD_dev/dev'
-    data_list : '/home/hckuo/project/spade/data/HAD/HAD_dev/HAD_dev_label.txt'
+    data_path : '/work/hckuo145/SPADE/data/HAD/HAD_dev/dev'
+    data_list : '/work/hckuo145/SPADE/data/HAD/HAD_dev/HAD_dev_label.txt'
     frame_size: 400
     frame_rate: 320
 
 test_dataset_args:
-    data_path : '/home/hckuo/project/spade/data/HAD/HAD_dev/dev'
-    data_list : '/home/hckuo/project/spade/data/HAD/HAD_dev/HAD_dev_label.txt'
+    data_path : '/work/hckuo145/SPADE/data/HAD/HAD_dev/dev'
+    data_list : '/work/hckuo145/SPADE/data/HAD/HAD_dev/HAD_dev_label.txt'
     frame_size: 400
     frame_rate: 320
 
 frame_loss:
     name: CrossEntropyLoss
-    args: {'weight': !!python/object/apply:torch.tensor [[5., 0.5556]]}
+    args: {'weight': !!python/object/apply:torch.tensor [[4.4964., 0.5625]]}
 
 utter_loss:
     name: CrossEntropyLoss

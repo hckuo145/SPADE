@@ -48,7 +48,11 @@ class HalfTruthDataset(Dataset):
     def __getitem__(self, idx):
         name = self.names[idx]
         path = self.info_dict[name]['path']
-        wave = torchaudio.load(path)[0][0]
+        
+        wave, sr = torchaudio.load(path)
+        if sr != 16000:
+            wave = torchaudio.functional.resample(wave, sr, 16000)
+        wave = wave[0]
 
         stamp = self.info_dict[name]['stamp']
         label = self.info_dict[name]['label']
@@ -89,8 +93,8 @@ if __name__ == '__main__':
     from torch.utils.data import DataLoader
 
     split = 'train'
-    data_path = f'/home/hckuo/project/spade/data/HAD/HAD_{split}/{split}'
-    data_list = f'/home/hckuo/project/spade/data/HAD/HAD_{split}/HAD_{split}_label.txt'
+    data_path = f'/work/hckuo145/SPADE/data/Voicebox/{split}/combine'
+    data_list = f'/work/hckuo145/SPADE/data/Voicebox/{split}/{split}_label.txt'
 
     dataset = HalfTruthDataset(data_path, data_list)
     loader  = DataLoader(dataset, batch_size=256, collate_fn=dataset.pad_batch)
