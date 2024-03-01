@@ -108,12 +108,14 @@ class Runner():
 
         print(disp, flush=True)
 
-    def _forward_step(self, batch_x, frame_y, utter_y, mask, phase='train', drop_last=True):
-        frame_p, utter_p = self.model(batch_x, mask)
+    def _forward_step(self, batch_x, frame_y, utter_y, lengths, phase='train', drop_last=True):
+        frame_p, utter_p = self.model(batch_x, lengths)
         
-        frame_p = einops.rearrange(frame_p, 'b t d -> (b t) d')
+        frame_p = einops.rearrange(frame_p, 'b t d -> (b t) d')        
         frame_y = einops.rearrange(frame_y, 'b t -> (b t)')
-        mask    = einops.rearrange(~mask  , 'b t -> (b t)')
+
+        mask = torch.arange(max(lengths))[None, :] < lengths[:, None]
+        mask = einops.rearrange(mask, 'b t -> (b t)').to(batch_x.device)
 
         frame_loss = self.criterion['frame'](frame_p[mask], frame_y[mask])
         utter_loss = self.criterion['utter'](utter_p, utter_y)
@@ -150,18 +152,15 @@ class Runner():
                     self.model.eval()
 
                 for _, batch_x, frame_y, utter_y, lengths in tqdm(self.loader[phase], ncols=100):
-                    mask = torch.arange(max(lengths))[None, :] >= lengths[:, None]
-                    
-                    mask    = mask.to(self.device)
                     batch_x = batch_x.to(self.device)
                     frame_y = frame_y.to(self.device)
                     utter_y = utter_y.to(self.device)
                     
                     if phase == 'train':
-                        frame_p, utter_p = self._forward_step(batch_x, frame_y, utter_y, mask, phase)
+                        frame_p, utter_p = self._forward_step(batch_x, frame_y, utter_y, lengths, phase)
                     else:
                         with torch.no_grad():
-                            frame_p, utter_p = self._forward_step(batch_x, frame_y, utter_y, mask, phase, drop_last=False)
+                            frame_p, utter_p = self._forward_step(batch_x, frame_y, utter_y, lengths, phase, drop_last=False)
 
                     for true, pred, l in zip(frame_y, frame_p, lengths):
                         true, pred = true[:l], torch.argmax(pred[:l], dim=-1)
@@ -193,14 +192,11 @@ class Runner():
 
         self.model.eval()
         for _, batch_x, frame_y, utter_y, lengths in tqdm(self.loader['test'], ncols=100):
-            mask = torch.arange(max(lengths))[None, :] >= lengths[:, None]
-
-            mask    = mask.to(self.device)
             batch_x = batch_x.to(self.device)
             frame_y = frame_y.to(self.device)
             utter_y = utter_y.to(self.device)
 
-            frame_p, utter_p = self._forward_step(batch_x, frame_y, utter_y, mask, phase='test')
+            frame_p, utter_p = self._forward_step(batch_x, frame_y, utter_y, lengths, phase='test')
  
             for true, pred, l in zip(frame_y, frame_p, lengths):
                 true, pred = true[:l], torch.argmax(pred[:l], dim=-1)

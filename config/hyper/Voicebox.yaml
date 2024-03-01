@@ -1,20 +1,20 @@
 exp_path: 'exp'
 
 train_dataset_args:
-    data_path : '/work/hckuo145/SPADE/data/Voicebox/train/combine'
-    data_list : '/work/hckuo145/SPADE/data/Voicebox/train/train_label.txt'
+    data_path : '/home/hckuo/Project/SPADE/data/Voicebox/train/combine'
+    data_list : '/home/hckuo/Project/SPADE/data/Voicebox/train/train_label.txt'
     frame_size: 400
     frame_rate: 320
 
 valid_dataset_args:
-    data_path : '/work/hckuo145/SPADE/data/Voicebox/valid/combine'
-    data_list : '/work/hckuo145/SPADE/data/Voicebox/valid/valid_label.txt'
+    data_path : '/home/hckuo/Project/SPADE/data/Voicebox/valid/combine'
+    data_list : '/home/hckuo/Project/SPADE/data/Voicebox/valid/valid_label.txt'
     frame_size: 400
     frame_rate: 320
 
 test_dataset_args:
-    data_path : '/work/hckuo145/SPADE/data/Voicebox/valid/combine'
-    data_list : '/work/hckuo145/SPADE/data/Voicebox/valid/valid_label.txt'
+    data_path : '/home/hckuo/Project/SPADE/data/Voicebox/valid/combine'
+    data_list : '/home/hckuo/Project/SPADE/data/Voicebox/valid/valid_label.txt'
     frame_size: 400
     frame_rate: 320
 

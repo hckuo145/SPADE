@@ -1,20 +1,20 @@
 exp_path: 'exp'
 
 train_dataset_args:
-    data_path : '/work/hckuo145/SPADE/data/HAD/HAD_train/train'
-    data_list : '/work/hckuo145/SPADE/data/HAD/HAD_train/HAD_train_label.txt'
+    data_path : '/home/hckuo/Project/SPADE/data/HAD/HAD_train/train'
+    data_list : '/home/hckuo/Project/SPADE/data/HAD/HAD_train/HAD_train_label.txt'
     frame_size: 400
     frame_rate: 320
 
 valid_dataset_args:
-    data_path : '/work/hckuo145/SPADE/data/HAD/HAD_dev/dev'
-    data_list : '/work/hckuo145/SPADE/data/HAD/HAD_dev/HAD_dev_label.txt'
+    data_path : '/home/hckuo/Project/SPADE/data/HAD/HAD_dev/dev'
+    data_list : '/home/hckuo/Project/SPADE/data/HAD/HAD_dev/HAD_dev_label.txt'
     frame_size: 400
     frame_rate: 320
 
 test_dataset_args:
-    data_path : '/work/hckuo145/SPADE/data/HAD/HAD_dev/dev'
-    data_list : '/work/hckuo145/SPADE/data/HAD/HAD_dev/HAD_dev_label.txt'
+    data_path : '/home/hckuo/Project/SPADE/data/HAD/HAD_dev/dev'
+    data_list : '/home/hckuo/Project/SPADE/data/HAD/HAD_dev/HAD_dev_label.txt'
     frame_size: 400
     frame_rate: 320
 

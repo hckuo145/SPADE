@@ -1,0 +1,21 @@
+frontend:
+    name: 'MSTFT'
+    args:
+        frame_size: 400
+        frame_rate: 320
+        num_mels  : 80
+
+backbone:
+    name: 'ResNet'
+    args:
+        block_fn   : 'SEBasicBlock'
+        blocks     : [3, 4, 6, 3]
+        channels   : [16, 16, 32, 64, 128]
+        sqex_reduce: 4
+        btnk_reduce: 1
+
+attention:
+    name: 'Transformer'
+    args:
+        num_heads : 8
+        hidden_dim: 128

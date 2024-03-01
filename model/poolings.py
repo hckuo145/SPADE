@@ -62,7 +62,7 @@ class SelfAttentivePooling(nn.Module):
         
         if mask is not None:
             w = w.masked_fill(mask, torch.finfo(torch.float32).min)
-        w = torch.softmax(w, dim=1)     
+        w = torch.softmax(w, dim=1)
 
         x = torch.einsum('b t f, b t -> b t f', x, w)
         x = torch.sum(x, dim=1) 
