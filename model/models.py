@@ -32,7 +32,7 @@ class Spade(nn.Module):
         _sample = einops.rearrange(_sample, 'b c t f -> b t (c f)')
         _num_features = _sample.size(-1)
 
-        self.attention = get_module(attention, embed_dim=_num_features)
+        self.attention = nn.ModuleList([ get_module(attention, embed_dim=_num_features) for _ in range(2) ])
         self.pooling   = get_module(pooling, num_features=_num_features)
 
         self.frame_classifier = nn.Linear(_num_features, 2)
@@ -43,19 +43,21 @@ class Spade(nn.Module):
         self.utter_classifier = nn.Linear(_num_features, 2)
 
     def forward(self, x, lengths=None):
-        frontend_feature  = self.frontend(x)
-        frontend_feature  = einops.rearrange(frontend_feature, 'b t f -> b () t f')
+        frontend_feature = self.frontend(x)
+        frontend_feature = einops.rearrange(frontend_feature, 'b t f -> b () t f')
 
-        backbone_feature  = self.backbone(frontend_feature)
-        backbone_feature  = einops.rearrange(backbone_feature, 'b c t f -> b t (c f)')
+        backbone_feature = self.backbone(frontend_feature)
+        backbone_feature = einops.rearrange(backbone_feature, 'b c t f -> b t (c f)')
 
         mask = (torch.arange(max(lengths))[None, :] >= (lengths)[:, None]).to(x.device)
+        
+        attention_feature = backbone_feature
+        for i in range(len(self.attention)):
+            attention_feature = self.attention[i](attention_feature, mask)[0]
+        frame_prediction = self.frame_classifier(attention_feature)
 
-        attention_feature = self.attention(backbone_feature, mask)[0]
-        frame_prediction  = self.frame_classifier(attention_feature)
-
-        pooling_feature   = self.pooling(attention_feature, mask)
-        utter_prediction  = self.utter_classifier(pooling_feature)
+        pooling_feature  = self.pooling(attention_feature, mask)
+        utter_prediction = self.utter_classifier(pooling_feature)
 
         return frame_prediction, utter_prediction
     
@@ -78,7 +80,7 @@ class Spade_v2(nn.Module):
         _num_features = _sample.size(-1)
 
         self.cls_token  = nn.Parameter(torch.zeros(_num_features))
-        self.attention  = get_module(attention, embed_dim=_num_features)
+        self.attention  = nn.ModuleList([ get_module(attention, embed_dim=_num_features) for _ in range(2) ])
         self.classifier = nn.Linear(_num_features, 2)
         
     def forward(self, x, lengths=None):
@@ -92,8 +94,10 @@ class Spade_v2(nn.Module):
         cls_token = einops.repeat(self.cls_token, 'f -> b () f', b=x.size(0))
         backbone_feature = torch.cat([cls_token, backbone_feature], dim=1) + pos_embed
 
+        attention_feature = backbone_feature
         mask = (torch.arange(max(lengths) + 1)[None, :] >= (lengths + 1)[:, None]).to(x.device)
-        attention_feature = self.attention(backbone_feature, mask)[0]
+        for i in range(len(self.attention)):
+            attention_feature = self.attention[i](attention_feature, mask)[0]
 
         prediction = self.classifier(attention_feature)
         frame_prediction = prediction[:,1:]
