@@ -49,6 +49,6 @@ monitor:
         mode: 'max'
 save_best_only: True
 
-patience : 5
-min_epoch: 50
-max_epoch: -1
+patience : -1
+min_epoch: -1
+max_epoch: 100

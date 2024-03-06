@@ -49,7 +49,7 @@ class SEBasicBlock(nn.Module):
         self.sqex = SqueezeAndExcite(out_channels, sqex_reduce)
         self.relu = nn.ReLU(inplace=True)
         
-        self.dsmp = nn.Sequential(
+        self.adpt = nn.Sequential(
             Conv1x1(in_channels, out_channels, stride),
             nn.BatchNorm2d(out_channels)
         ) if stride != 1 or in_channels != out_channels else None
@@ -58,8 +58,8 @@ class SEBasicBlock(nn.Module):
         res = self.conv(x)
         res = self.sqex(res)
 
-        if self.dsmp is not None:
-            x = self.dsmp(x)
+        if self.adpt is not None:
+            x = self.adpt(x)
 
         out = x + res
         out = self.relu(out)
@@ -89,7 +89,7 @@ class SEBottleneck(nn.Module):
         self.sqex = SqueezeAndExcite(out_channels, sqex_reduce)
         self.relu = nn.ReLU(inplace=True)
 
-        self.dsmp = nn.Sequential(
+        self.adpt = nn.Sequential(
             Conv1x1(in_channels, out_channels, stride),
             nn.BatchNorm2d(out_channels)
         ) if stride != 1 or in_channels != out_channels else None
@@ -98,8 +98,8 @@ class SEBottleneck(nn.Module):
         res = self.conv(x)
         res = self.sqex(res)
 
-        if self.dsmp is not None:
-            x = self.dsmp(x)
+        if self.adpt is not None:
+            x = self.adpt(x)
 
         out = x + res
         out = self.relu(out)
@@ -108,7 +108,7 @@ class SEBottleneck(nn.Module):
 
 
 class SEBottle2neck(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1, sqex_reduce=16, btnk_reduce=4, scale=4, **kwargs):
+    def __init__(self, in_channels, out_channels, stride=1, sqex_reduce=16, btnk_reduce=4, scale=4):
         super(SEBottle2neck, self).__init__()
 
         rdc_channels = int(out_channels / btnk_reduce)
@@ -138,7 +138,7 @@ class SEBottle2neck(nn.Module):
         self.sqex = SqueezeAndExcite(out_channels, sqex_reduce)
         self.relu = nn.ReLU(inplace=True)
     
-        self.dsmp = nn.Sequential(
+        self.adpt = nn.Sequential(
             Conv1x1(in_channels, out_channels, stride),
             nn.BatchNorm2d(out_channels)
         ) if stride != 1 or in_channels != out_channels else None
@@ -151,11 +151,11 @@ class SEBottle2neck(nn.Module):
         sps = torch.chunk(res, self.scale, dim=1)
         
         res = sps[0]
-        if self.dsmp is not None:
+        if self.adpt is not None:
             res = self.pool(res)
         
         for i, conv in enumerate(1, self.convs):
-            if i == 1 or self.dsmp is not None:
+            if i == 1 or self.adpt is not None:
                 spx = sps[i]
             else:
                 spx = spx + sps[i]
@@ -166,8 +166,8 @@ class SEBottle2neck(nn.Module):
         res = self.conv3(res)
         res = self.sqex(res)
 
-        if self.dsmp is not None:
-            x = self.dsmp(x)
+        if self.adpt is not None:
+            x = self.adpt(x)
 
         out = x + res
         out = self.relu(out)

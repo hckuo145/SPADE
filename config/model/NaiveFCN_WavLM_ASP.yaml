@@ -1,0 +1,10 @@
+frontend:
+    name: 'WavLM'
+    args:
+        weighted_sum: True
+
+pooling:
+    name: 'AttentiveStatisticsPooling'
+    args: {}
+
+embed_dim: 128

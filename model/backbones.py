@@ -1,5 +1,8 @@
+import einops
+
 import torch
 import torch.nn as nn
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 from .sublayers import *
 
@@ -45,5 +48,83 @@ class ResNet(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
+
+        return out
+    
+
+class ResConv1d_BLSTM(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(ResConv1d_BLSTM, self).__init__()
+
+        self.convs = nn.ModuleList([
+            nn.Sequential(
+                nn.Conv1d(in_channels if i == 0 else out_channels, out_channels, \
+                        kernel_size=3, padding=1, bias=False),
+                nn.BatchNorm1d(out_channels),
+                nn.ReLU(inplace=True)
+            ) for i in range(7)
+        ])
+
+        self.lstm = nn.LSTM(out_channels, out_channels // 2, num_layers=2, bidirectional=True, batch_first=True)
+
+        self.adpt = nn.Sequential(
+            nn.Conv1d(in_channels, out_channels, kernel_size=1, bias=False),
+            nn.BatchNorm1d(out_channels)
+        ) if in_channels != out_channels else None
+
+    def forward(self, x, lengths=None):
+        conv_out = x
+        for i, conv in enumerate(self.convs):
+            conv_res = conv(conv_out)
+            if i == 0 and self.adpt is not None:
+                conv_out = self.adpt(conv_out)
+            conv_out = conv_out + conv_res
+
+        lstm_out = einops.rearrange(conv_out, 'b f t -> b t f')
+        if lengths is None:
+            lstm_out = self.lstm(lstm_out)[0]
+        else:
+            lstm_out = pack_padded_sequence(lstm_out, lengths=lengths, batch_first=True, enforce_sorted=False)
+            lstm_out = self.lstm(lstm_out)[0]
+            lstm_out = pad_packed_sequence(lstm_out, batch_first=True)[0]
+
+        return conv_out, lstm_out
+    
+
+class Conv2d_BGRU(nn.Module):
+    def __init__(self, channels=[32, 64, 128, 128, 128]):
+        super(Conv2d_BGRU, self).__init__()
+        
+        conv = []
+        in_channels = 1
+        for out_channels in channels:
+            conv += [
+                Conv3x3(in_channels, out_channels),
+                nn.BatchNorm2d(out_channels),
+                nn.ReLU(inplace=True),
+
+                Conv3x3(out_channels, out_channels),
+                nn.BatchNorm2d(out_channels),
+                nn.ReLU(inplace=True),
+
+                nn.AvgPool2d(kernel_size=(1, 2), stride=(1,2))
+            ]
+            in_channels = out_channels
+        self.conv = nn.Sequential(*conv)
+        
+        self.gru  = nn.GRU(out_channels, out_channels // 2, num_layers=2, bidirectional=True, batch_first=True)
+
+    def forward(self, x, lengths=None):
+        out = self.conv(x)
+
+        out = torch.mean(out, dim=3)
+        out = einops.rearrange(out, 'b c t -> b t c')
+
+        if lengths is None:
+            out = self.gru(out)[0]
+        else:
+            out = pack_padded_sequence(out, lengths=lengths, batch_first=True, enforce_sorted=False)
+            out = self.gru(out)[0]
+            out = pad_packed_sequence(out, batch_first=True)[0]
 
         return out

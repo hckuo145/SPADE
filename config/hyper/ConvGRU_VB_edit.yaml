@@ -1,0 +1,54 @@
+exp_path: 'exp'
+
+train_dataset_args:
+    data_path : '/home/hckuo/Project/SPADE/data/Voicebox/train/combine'
+    data_list : '/home/hckuo/Project/SPADE/data/Voicebox/train/train_label.txt'
+    frame_size: 400
+    frame_rate: 320
+
+valid_dataset_args:
+    data_path : '/home/hckuo/Project/SPADE/data/Voicebox/valid/combine'
+    data_list : '/home/hckuo/Project/SPADE/data/Voicebox/valid/valid_label.txt'
+    frame_size: 400
+    frame_rate: 320
+
+test_dataset_args:
+    data_path : '/home/hckuo/Project/SPADE/data/Voicebox/valid/combine'
+    data_list : '/home/hckuo/Project/SPADE/data/Voicebox/valid/valid_label.txt'
+    frame_size: 400
+    frame_rate: 320
+
+frame_loss:
+    name: BCELoss
+    args: {}
+
+utter_loss:
+    name: BCELoss
+    args: {}
+
+optim:
+    name: 'AdamW'
+    args: {'lr': 0.0001}
+
+monitor:
+    valid/frame_loss:
+        mode: 'min'
+    valid/utter_loss:
+        mode: 'min'
+    valid/loss:
+        mode: 'min'
+    valid/frame_A:
+        mode: 'max'
+    valid/frame_F1:
+        mode: 'max'
+    valid/utter_A:
+        mode: 'max'
+    valid/utter_F1:
+        mode: 'max'
+    valid/score:
+        mode: 'max'
+save_best_only: True
+
+patience : -1
+min_epoch: -1
+max_epoch: 100

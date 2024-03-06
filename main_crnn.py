@@ -1,11 +1,20 @@
 import os
-import torch
+import yaml
 import einops
+import argparse
 import numpy as np
 from tqdm            import tqdm
 from collections     import defaultdict
 from tensorboardX    import SummaryWriter
 from sklearn.metrics import confusion_matrix
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+
+from model   import ConvGRU
+from dataset import HalfTruthDataset
 
 
 class Runner():
@@ -109,14 +118,19 @@ class Runner():
         print(disp, flush=True)
 
     def _forward_step(self, batch_x, frame_y, utter_y, lengths, phase='train', drop_last=True):
-        frame_p, utter_p = self.model(batch_x, lengths)
+        mask = (torch.arange(max(lengths))[None, :] < lengths[:, None]).to(batch_x.device)
         
-        frame_p = einops.rearrange(frame_p, 'b t d -> (b t) d')        
+        frame_p = self.model(batch_x, lengths)
+        frame_p = torch.softmax(frame_p, dim=2)[..., 0]
+        frame_p = frame_p.masked_fill(~mask, 0)
+        
+        utter_p = torch.sum(frame_p ** 2, dim=1) / torch.sum(frame_p, dim=1)
+
+        mask    = einops.rearrange(mask   , 'b t -> (b t)')
+        frame_p = einops.rearrange(frame_p, 'b t -> (b t)')
         frame_y = einops.rearrange(frame_y, 'b t -> (b t)')
 
-        mask = torch.arange(max(lengths))[None, :] < lengths[:, None]
-        mask = einops.rearrange(mask, 'b t -> (b t)').to(batch_x.device)
-
+        frame_y, utter_y = 1. - frame_y, 1. - utter_y
         frame_loss = self.criterion['frame'](frame_p[mask], frame_y[mask])
         utter_loss = self.criterion['utter'](utter_p, utter_y)
         
@@ -133,12 +147,12 @@ class Runner():
         self.metrics[f'{phase}/frame_loss'] += frame_loss.item() / reduce
         self.metrics[f'{phase}/utter_loss'] += utter_loss.item() / reduce
 
-        frame_p = einops.rearrange(frame_p, '(b t) d -> b t d', b=batch_x.size(0))
+        frame_p = einops.rearrange(frame_p, '(b t) -> b t', b=batch_x.size(0))
 
         return frame_p, utter_p
 
     def train(self):
-        while self.epoch <= self.max_epoch:
+        while self.epoch < self.max_epoch:
             self.epoch  += 1
             self.metrics = defaultdict(float)
 
@@ -163,11 +177,11 @@ class Runner():
                             frame_p, utter_p = self._forward_step(batch_x, frame_y, utter_y, lengths, phase, drop_last=False)
 
                     for true, pred, l in zip(frame_y, frame_p, lengths):
-                        true, pred = true[:l], torch.argmax(pred[:l], dim=-1)
+                        true, pred = true[:l], (pred[:l] < 0.5).long()
                         frame_true += list(true.detach().cpu().numpy())
                         frame_pred += list(pred.detach().cpu().numpy())
 
-                    utter_p = torch.argmax(utter_p, dim=-1)
+                    utter_p = (utter_p < 0.5).long()
                     utter_true += list(utter_y.detach().cpu().numpy())
                     utter_pred += list(utter_p.detach().cpu().numpy())
 
@@ -182,6 +196,8 @@ class Runner():
             self._update_callback(self.save_best_only)
             if self._check_early_stopping(): 
                 break
+        
+        self.save_checkpoint(f'{self.exp_path}/{self.title}/checkpoints/last.pt')
 
     @torch.no_grad()
     def test(self, checkpoint):
@@ -199,11 +215,11 @@ class Runner():
             frame_p, utter_p = self._forward_step(batch_x, frame_y, utter_y, lengths, phase='test')
  
             for true, pred, l in zip(frame_y, frame_p, lengths):
-                true, pred = true[:l], torch.argmax(pred[:l], dim=-1)
+                true, pred = true[:l], (pred[:l] < 0.5).long()
                 frame_true += list(true.detach().cpu().numpy())
                 frame_pred += list(pred.detach().cpu().numpy())
 
-            utter_p = torch.argmax(utter_p, dim=-1)
+            utter_p = (utter_p < 0.5).long()
             utter_true += list(utter_y.detach().cpu().numpy())
             utter_pred += list(utter_p.detach().cpu().numpy())
 
@@ -229,3 +245,77 @@ class Runner():
             F1 = 2 * P * R / (P + R)
 
         return TP, FN, FP, TN, A, P, R, F1
+    
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--test' , action='store_true', default=False)
+    parser.add_argument('--train', action='store_true', default=False)
+
+    parser.add_argument('--seed'  , type=int, default=0)
+    parser.add_argument('--batch' , type=int, default=256)
+    parser.add_argument('--model' , type=str, default='Spade')
+    parser.add_argument('--device', type=str, default='cuda')
+    parser.add_argument('--params', type=str, default=None)
+
+    parser.add_argument('--title'     , type=str, default='untitled')
+    parser.add_argument('--exp_path'  , type=str, default='exp/')
+    parser.add_argument('--model_conf', type=str, default='config/model/model.yaml')
+    parser.add_argument('--hyper_conf', type=str, default='config/hyper/hyper.yaml')
+    args = parser.parse_args()
+
+    with open(args.hyper_conf) as conf:
+        vars(args).update(yaml.load(conf, Loader=yaml.Loader))
+
+    with open(args.model_conf) as conf:
+        model_args = yaml.load(conf, Loader=yaml.Loader)
+
+
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.backends.cudnn.deterministic = True
+    device = torch.device(args.device)
+
+    print(f'[Title] - Task name: {args.title}', flush=True)
+
+    model = globals()[args.model](**model_args).to(device)
+    num_params = sum( params.numel() for params in model.parameters() )
+    print(f'[Model] - # params: {num_params}', flush=True)
+
+    criterion = {
+        'frame': getattr(nn, args.frame_loss['name'])(**args.frame_loss['args']).to(device),
+        'utter': getattr(nn, args.utter_loss['name'])(**args.utter_loss['args']).to(device)
+    }
+
+
+    if args.train:
+        dataset = {
+            'train': HalfTruthDataset(**args.train_dataset_args),
+            'valid': HalfTruthDataset(**args.valid_dataset_args)
+        }
+
+        loader = {
+            'train': DataLoader(dataset['train'], batch_size=args.batch, num_workers=4, pin_memory=True, \
+                    collate_fn=dataset['train'].pad_batch, shuffle=True, drop_last=True),
+            'valid': DataLoader(dataset['valid'], batch_size=args.batch, num_workers=4, pin_memory=True, \
+                    collate_fn=dataset['valid'].pad_batch)
+        }
+
+        optimizer = getattr(optim, args.optim['name'])(model.parameters(), **args.optim['args'])
+
+        runner = Runner(model, loader, device, criterion, optimizer, args=args)
+        runner.train()
+
+
+    if args.test:
+        dataset = {
+            'test': HalfTruthDataset(**args.test_dataset_args)
+        }
+
+        loader = {
+            'test': DataLoader(dataset['test'], batch_size=args.batch, num_workers=4, pin_memory=True, \
+                    collate_fn=dataset['test'].pad_batch)
+        }
+
+        runner = Runner(model, loader, device, criterion, args=args)
+        runner.test(args.params)
