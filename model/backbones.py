@@ -65,7 +65,7 @@ class ResConv1d_BLSTM(nn.Module):
             ) for i in range(7)
         ])
 
-        self.lstm = nn.LSTM(out_channels, out_channels // 2, num_layers=2, bidirectional=True, batch_first=True)
+        self.lstm = nn.LSTM(out_channels, out_channels // 2, bidirectional=True, batch_first=True)
 
         self.adpt = nn.Sequential(
             nn.Conv1d(in_channels, out_channels, kernel_size=1, bias=False),
