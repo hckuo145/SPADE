@@ -121,18 +121,18 @@ class Runner():
         mask = (torch.arange(max(lengths))[None, :] < lengths[:, None]).to(batch_x.device)
         
         frame_p = self.model(batch_x, lengths)
-        frame_p = torch.softmax(frame_p, dim=2)[..., 0]
-        frame_p = frame_p.masked_fill(~mask, 0)
         
-        utter_p = torch.sum(frame_p ** 2, dim=1) / torch.sum(frame_p, dim=1)
+        frame_p0 = torch.softmax(frame_p, dim=2)[..., 0]
+        frame_p0 = frame_p0.masked_fill(~mask, 0)
+        utter_p0 = torch.sum(frame_p0 ** 2, dim=1) / torch.sum(frame_p0, dim=1)
 
         mask    = einops.rearrange(mask   , 'b t -> (b t)')
-        frame_p = einops.rearrange(frame_p, 'b t -> (b t)')
         frame_y = einops.rearrange(frame_y, 'b t -> (b t)')
+        frame_p = einops.rearrange(frame_p, 'b t d -> (b t) d')
 
-        frame_y, utter_y = 1. - frame_y, 1. - utter_y
+        utter_y0 = 1. - utter_y
         frame_loss = self.criterion['frame'](frame_p[mask], frame_y[mask])
-        utter_loss = self.criterion['utter'](utter_p, utter_y)
+        utter_loss = self.criterion['utter'](utter_p0, utter_y0)
         
         loss = frame_loss + utter_loss
 
@@ -147,9 +147,9 @@ class Runner():
         self.metrics[f'{phase}/frame_loss'] += frame_loss.item() / reduce
         self.metrics[f'{phase}/utter_loss'] += utter_loss.item() / reduce
 
-        frame_p = einops.rearrange(frame_p, '(b t) -> b t', b=batch_x.size(0))
+        frame_p = einops.rearrange(frame_p, '(b t) d -> b t d', b=batch_x.size(0))
 
-        return frame_p, utter_p
+        return frame_p, utter_p0
 
     def train(self):
         while self.epoch < self.max_epoch:
@@ -177,7 +177,7 @@ class Runner():
                             frame_p, utter_p = self._forward_step(batch_x, frame_y, utter_y, lengths, phase, drop_last=False)
 
                     for true, pred, l in zip(frame_y, frame_p, lengths):
-                        true, pred = true[:l], (pred[:l] < 0.5).long()
+                        true, pred = true[:l], torch.argmax(pred[:l], dim=-1)
                         frame_true += list(true.detach().cpu().numpy())
                         frame_pred += list(pred.detach().cpu().numpy())
 
@@ -215,7 +215,7 @@ class Runner():
             frame_p, utter_p = self._forward_step(batch_x, frame_y, utter_y, lengths, phase='test')
  
             for true, pred, l in zip(frame_y, frame_p, lengths):
-                true, pred = true[:l], (pred[:l] < 0.5).long()
+                true, pred = true[:l], torch.argmax(pred[:l], dim=-1)
                 frame_true += list(true.detach().cpu().numpy())
                 frame_pred += list(pred.detach().cpu().numpy())
 
@@ -230,6 +230,7 @@ class Runner():
         self.metrics['test/score'] = 0.7 * self.metrics['test/frame_F1'] + 0.3 * self.metrics['test/utter_A']
 
         self._display('Test')
+        print(self.metrics['test/frame_F1'], self.metrics['test/utter_A'], self.metrics['test/score'])
 
     @staticmethod
     def evaluate(y_true, y_pred):
@@ -279,7 +280,7 @@ if __name__ == '__main__':
     print(f'[Title] - Task name: {args.title}', flush=True)
 
     model = globals()[args.model](**model_args).to(device)
-    num_params = sum( params.numel() for params in model.parameters() )
+    num_params = sum( params.numel() for params in model.parameters() if params.requires_grad)
     print(f'[Model] - # params: {num_params}', flush=True)
 
     criterion = {

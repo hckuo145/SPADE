@@ -2,7 +2,8 @@ import os
 import yaml
 import einops
 import argparse
-import numpy as np
+import numpy             as np
+import matplotlib.pyplot as plt
 from tqdm            import tqdm
 from collections     import defaultdict
 from tensorboardX    import SummaryWriter
@@ -13,7 +14,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from model   import Spade, Spade_v2, NaiveFCN
+from model   import *
 from dataset import HalfTruthDataset
 
 
@@ -225,6 +226,63 @@ class Runner():
         self.metrics['test/score'] = 0.7 * self.metrics['test/frame_F1'] + 0.3 * self.metrics['test/utter_A']
 
         self._display('Test')
+        print(self.metrics['test/frame_F1'], self.metrics['test/utter_A'], self.metrics['test/score'])
+
+    @torch.no_grad()
+    def plot(self, checkpoint):
+        self.load_checkpoint(checkpoint, params_only=True)
+
+        frontend = MSTFT(frame_size=400, frame_rate=320, num_mels=80).to(device)
+
+        count = 0
+        self.model.eval()
+        for names, batch_x, frame_y, utter_y, lengths in self.loader['test']:
+            batch_x = batch_x.to(self.device)
+            frame_y = frame_y.to(self.device)
+            utter_y = utter_y.to(self.device)
+            
+            sptrm_x = frontend(batch_x)
+            frame_p, utter_p = self._forward_step(batch_x, frame_y, utter_y, lengths, phase='test')
+
+            for name, sptrm, true, pred, l in zip(names, sptrm_x, frame_y, frame_p, lengths):
+                sptrm, true, pred = sptrm[:l], true[:l], torch.argmax(pred[:l], dim=-1)
+                
+                sptrm = sptrm.detach().cpu().numpy()
+                true  = true.detach().cpu().numpy()
+                pred  = pred.detach().cpu().numpy()
+                
+
+                plt.figure(figsize=(12, 4))
+
+                plt.subplot(3, 1, 1)
+                plt.imshow(sptrm.T, plt.cm.hsv)
+                plt.title('Spectrogram')
+                plt.axis('off')
+
+                plt.subplot(3, 1, 2)
+                mask = np.zeros_like(sptrm)
+                mask[true == 0] = 1.
+                plt.imshow(mask.T, plt.cm.winter)
+                plt.title('Ground Truth')
+                plt.axis('off')
+
+                plt.subplot(3, 1, 3)
+                mask = np.zeros_like(sptrm)
+                mask[pred == 0] = 1.
+                plt.imshow(mask.T, plt.cm.winter)
+                plt.title('Prediction')
+                plt.axis('off')
+                
+                os.makedirs(f'{args.exp_path}/{args.title}/images', exist_ok=True)
+                plt.savefig(f'{args.exp_path}/{args.title}/images/{name}.png')
+                plt.close('all')
+
+                count += 1
+                if count >= 100:
+                    break
+            if count >= 100:
+                break
+
 
     @staticmethod
     def evaluate(y_true, y_pred):
@@ -244,6 +302,7 @@ class Runner():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--plot' , action='store_true', default=False)
     parser.add_argument('--test' , action='store_true', default=False)
     parser.add_argument('--train', action='store_true', default=False)
 
@@ -274,7 +333,7 @@ if __name__ == '__main__':
     print(f'[Title] - Task name: {args.title}', flush=True)
 
     model = globals()[args.model](**model_args).to(device)
-    num_params = sum( params.numel() for params in model.parameters() )
+    num_params = sum( params.numel() for params in model.parameters() if params.requires_grad)
     print(f'[Model] - # params: {num_params}', flush=True)
 
     criterion = {
@@ -314,3 +373,16 @@ if __name__ == '__main__':
 
         runner = Runner(model, loader, device, criterion, args=args)
         runner.test(args.params)
+
+    if args.plot:
+        dataset = {
+            'test': HalfTruthDataset(**args.test_dataset_args)
+        }
+
+        loader = {
+            'test': DataLoader(dataset['test'], batch_size=args.batch, num_workers=4, pin_memory=True, \
+                    collate_fn=dataset['test'].pad_batch)
+        }
+
+        runner = Runner(model, loader, device, criterion, args=args)
+        runner.plot(args.params)

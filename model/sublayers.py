@@ -32,7 +32,7 @@ class SqueezeAndExcite(nn.Module):
         return y
 
 class SEBasicBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1, sqex_reduce=16, btnk_reduce=1, **kwargs):
+    def __init__(self, in_channels, out_channels, stride=1, sqex_reduce=16, btnk_reduce=1, dropout=0., **kwargs):
         super(SEBasicBlock, self).__init__()
 
         rdc_channels = int(out_channels / btnk_reduce)
@@ -47,6 +47,7 @@ class SEBasicBlock(nn.Module):
         )
  
         self.sqex = SqueezeAndExcite(out_channels, sqex_reduce)
+        # self.drop = nn.Dropout(dropout, inplace=True)
         self.relu = nn.ReLU(inplace=True)
         
         self.adpt = nn.Sequential(
@@ -57,6 +58,7 @@ class SEBasicBlock(nn.Module):
     def forward(self, x):
         res = self.conv(x)
         res = self.sqex(res)
+        # res = self.drop(res)
 
         if self.adpt is not None:
             x = self.adpt(x)
@@ -68,7 +70,7 @@ class SEBasicBlock(nn.Module):
 
 
 class SEBottleneck(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1, sqex_reduce=16, btnk_reduce=4, **kwargs):
+    def __init__(self, in_channels, out_channels, stride=1, sqex_reduce=16, btnk_reduce=4, dropout=0., **kwargs):
         super(SEBottleneck, self).__init__()
 
         rdc_channels = int(out_channels / btnk_reduce)
@@ -87,6 +89,7 @@ class SEBottleneck(nn.Module):
         )
 
         self.sqex = SqueezeAndExcite(out_channels, sqex_reduce)
+        # self.drop = nn.Dropout(dropout, inplace=True)
         self.relu = nn.ReLU(inplace=True)
 
         self.adpt = nn.Sequential(
@@ -97,6 +100,7 @@ class SEBottleneck(nn.Module):
     def forward(self, x):
         res = self.conv(x)
         res = self.sqex(res)
+        # res = self.drop(res)
 
         if self.adpt is not None:
             x = self.adpt(x)
@@ -108,7 +112,7 @@ class SEBottleneck(nn.Module):
 
 
 class SEBottle2neck(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1, sqex_reduce=16, btnk_reduce=4, scale=4):
+    def __init__(self, in_channels, out_channels, stride=1, sqex_reduce=16, btnk_reduce=4, dropout=0., scale=4):
         super(SEBottle2neck, self).__init__()
 
         rdc_channels = int(out_channels / btnk_reduce)
@@ -136,6 +140,7 @@ class SEBottle2neck(nn.Module):
         )
         
         self.sqex = SqueezeAndExcite(out_channels, sqex_reduce)
+        # self.drop = nn.Dropout(dropout, inplace=True)
         self.relu = nn.ReLU(inplace=True)
     
         self.adpt = nn.Sequential(
@@ -165,6 +170,7 @@ class SEBottle2neck(nn.Module):
 
         res = self.conv3(res)
         res = self.sqex(res)
+        # res = self.drop(res)
 
         if self.adpt is not None:
             x = self.adpt(x)

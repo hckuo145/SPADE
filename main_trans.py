@@ -241,6 +241,7 @@ class Runner():
         self.metrics['test/score'] = 0.7 * self.metrics['test/frame_F1'] + 0.3 * self.metrics['test/utter_A']
 
         self._display('Test')
+        print(self.metrics['test/frame_F1'], self.metrics['test/utter_A'], self.metrics['test/score'])
 
     @staticmethod
     def evaluate(y_true, y_pred):
@@ -290,7 +291,7 @@ if __name__ == '__main__':
     print(f'[Title] - Task name: {args.title}', flush=True)
 
     model = globals()[args.model](**model_args).to(device)
-    num_params = sum( params.numel() for params in model.parameters() )
+    num_params = sum( params.numel() for params in model.parameters() if params.requires_grad)
     print(f'[Model] - # params: {num_params}', flush=True)
 
     def get_criterion(name_args_dict, **kwargs):

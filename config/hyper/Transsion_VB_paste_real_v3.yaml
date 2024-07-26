@@ -1,26 +1,26 @@
 exp_path: 'exp'
 
 train_dataset_args:
-    data_path : '/work/hckuo145/SPADE/data/HAD/HAD_train/train'
-    data_list : '/work/hckuo145/SPADE/data/HAD/HAD_train/HAD_train_label.txt'
+    data_path : '/work/hckuo145/SPADE/data/Voicebox/medium-v3/combine'
+    data_list : '/work/hckuo145/SPADE/data/Voicebox/medium-v3/train_label_paste_real.txt'
     frame_size: 400
     frame_rate: 320
 
 valid_dataset_args:
-    data_path : '/work/hckuo145/SPADE/data/HAD/HAD_dev/dev'
-    data_list : '/work/hckuo145/SPADE/data/HAD/HAD_dev/HAD_dev_label.txt'
+    data_path : '/work/hckuo145/SPADE/data/Voicebox/medium-v3/combine'
+    data_list : '/work/hckuo145/SPADE/data/Voicebox/medium-v3/valid_label_paste_real.txt'
     frame_size: 400
     frame_rate: 320
 
 test_dataset_args:
-    data_path : '/work/hckuo145/SPADE/data/HAD/HAD_dev/dev'
-    data_list : '/work/hckuo145/SPADE/data/HAD/HAD_dev/HAD_dev_label.txt'
+    data_path : '/work/hckuo145/SPADE/data/Voicebox/medium-v3/combine'
+    data_list : '/work/hckuo145/SPADE/data/Voicebox/medium-v3/test_label_paste_real.txt'
     frame_size: 400
     frame_rate: 320
 
 frame_loss:
     name: CrossEntropyLoss
-    args: {'weight': !!python/object/apply:torch.tensor [[4.4964, 0.5625]]}
+    args: {'weight': !!python/object/apply:torch.tensor [[14.1764, 0.5183]]}
 
 dwsmp_loss:
     name: MultipleFrameLoss
@@ -32,7 +32,7 @@ isolt_loss:
 
 optim:
     name: 'AdamW'
-    args: {'lr': 0.0001}
+    args: {'lr': 0.0001, 'weight_decay': 0.05}
 
 monitor:
     valid/frame_loss:
@@ -55,6 +55,6 @@ monitor:
         mode: 'max'
 save_best_only: True
 
-patience : -1
-min_epoch: -1
-max_epoch: 100
+patience : 10
+min_epoch: 100
+max_epoch: -1

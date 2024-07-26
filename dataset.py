@@ -34,6 +34,7 @@ class HalfTruthDataset(Dataset):
                 stamp = stamp.astype(np.int64)
 
             path  = f'{data_path}/{name}.wav'
+            # path  = f'{data_path}/{name}.mp3'
             stamp = torch.tensor(stamp, dtype=torch.int64)
             label = torch.tensor(label, dtype=torch.int64)
 

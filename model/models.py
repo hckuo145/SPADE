@@ -149,7 +149,6 @@ class NaiveFCN(nn.Module):
         frontend_feature = self.frontend(x)
 
         backbone_feature = self.backbone(frontend_feature)
-        print(backbone_feature.size())
         frame_prediction = self.frame_classifier(backbone_feature)
         
         mask = (torch.arange(max(lengths))[None, :] >= lengths[:, None]).to(x.device)

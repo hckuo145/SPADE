@@ -28,12 +28,38 @@ class MSTFT(nn.Module):
         return feats
 
 
+class Wav2Vec2_randinit(nn.Module):
+    def __init__(self, weighted_sum=True, requires_grad=False):
+        super(Wav2Vec2_randinit, self).__init__()
+
+        self.extractor = torchaudio.models.wav2vec2_base()
+        self.extractor.requires_grad_(requires_grad)
+
+        if weighted_sum:
+            self.weights = nn.Parameter(torch.ones(12) / 12)
+        self.weighted_sum = weighted_sum
+
+    def forward(self, waves):
+        feats = self.extractor.extract_features(waves)[0]
+        
+        if self.weighted_sum:
+            feats = torch.stack(feats, dim=0)
+            feats = nn.functional.layer_norm(feats, (feats.size(-1),))
+            feats = torch.einsum('n, n b t h -> b t h', self.weights.softmax(dim=-1), feats)
+
+        else:
+            feats = feats[-1]
+            feats = nn.functional.layer_norm(feats, (feats.size(-1),))
+
+        return feats
+
+
 class Wav2Vec2(nn.Module):
     def __init__(self, weighted_sum=True, requires_grad=False):
         super(Wav2Vec2, self).__init__()
 
         self.extractor = hub.wav2vec2()
-        self.extractor.requires_grad = requires_grad
+        self.extractor.requires_grad_(requires_grad)
 
         if weighted_sum:
             self.weights = nn.Parameter(torch.ones(13) / 13)
@@ -60,7 +86,7 @@ class HuBERT(nn.Module):
         super(HuBERT, self).__init__()
 
         self.extractor = hub.hubert()
-        self.extractor.requires_grad = requires_grad
+        self.extractor.requires_grad_(requires_grad)
 
         if weighted_sum:
             self.weights = nn.Parameter(torch.ones(13) / 13)
@@ -86,7 +112,7 @@ class WavLM(nn.Module):
         super(WavLM, self).__init__()
 
         self.extractor = hub.wavlm()
-        self.extractor.requires_grad = requires_grad
+        self.extractor.requires_grad_(requires_grad)
 
         if weighted_sum:
             self.weights = nn.Parameter(torch.ones(13) / 13)
@@ -109,7 +135,7 @@ class WavLM(nn.Module):
 
 if __name__ == '__main__':
     import sys
-    sys.path.append('/home/hckuo/project/spade/')
+    sys.path.append('/work/hckuo145/SPADE')
 
     from dataset import HalfTruthDataset
     from torch.utils.data import DataLoader
@@ -118,16 +144,18 @@ if __name__ == '__main__':
     frontend = Wav2Vec2(weighted_sum=True, requires_grad=False)
     # frontend = HuBERT(weighted_sum=True, requires_grad=False)
     # frontend = WavLM(weighted_sum=True, requires_grad=False)
+    # frontend = Wav2Vec2_randinit(weighted_sum=True, requires_grad=False)
+    print(frontend.extractor.requires_grad)
+    print(frontend.weights.requires_grad)
+    # split = 'train'
+    # data_path = f'/work/hckuo145/SPADE/data/HAD/HAD_{split}/{split}'
+    # data_list = f'/work/hckuo145/SPADE/data/HAD/HAD_{split}/HAD_{split}_label.txt'
 
-    split = 'train'
-    data_path = f'/home/hckuo/project/spade/data/HAD/HAD_{split}/{split}'
-    data_list = f'/home/hckuo/project/spade/data/HAD/HAD_{split}/HAD_{split}_label.txt'
+    # dataset = HalfTruthDataset(data_path, data_list)
+    # loader  = DataLoader(dataset, batch_size=10, collate_fn=dataset.pad_batch)
 
-    dataset = HalfTruthDataset(data_path, data_list)
-    loader  = DataLoader(dataset, batch_size=10, collate_fn=dataset.pad_batch)
-
-    for i, (names, waves, stamps, labels, nframes) in enumerate(loader):
-        print(waves.size())
-        feats = frontend(waves)
-        print(feats.size())
-        break
+    # for i, (names, waves, stamps, labels, nframes) in enumerate(loader):
+    #     print(waves.size())
+    #     feats = frontend(waves)
+    #     print(feats.size())
+    #     break

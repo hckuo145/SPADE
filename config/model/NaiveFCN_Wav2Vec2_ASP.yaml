@@ -1,5 +1,5 @@
 frontend:
-    name: 'WavLM'
+    name: 'Wav2Vec2'
     args:
         weighted_sum : True
         requires_grad: True
