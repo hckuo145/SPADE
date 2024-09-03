@@ -1,0 +1,24 @@
+frontend:
+    name: 'Wav2Vec2'
+    args:
+        weighted_sum : True
+        requires_grad: False
+
+backbone:
+    name: 'ResNet'
+    args:
+        block_fn   : 'SEBasicBlock'
+        blocks     : [3, 4, 6, 3]
+        channels   : [16, 16, 32, 64, 128]
+        sqex_reduce: 4
+        btnk_reduce: 1
+
+attention:
+    name: 'Transformer'
+    args:
+        num_heads : 8
+        hidden_dim: 128
+
+pooling:
+    name: 'AttentiveStatisticsPooling'
+    args: {}
