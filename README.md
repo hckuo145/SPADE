@@ -2,6 +2,9 @@
 
 SPADE is a framework designed for detecting spoofed segments in partially fake audio. It supports both binary and ternary classification tasks across different model architectures and dataset configurations.
 
+paper  : https://arxiv.org/pdf/2501.03805
+dataset: https://huggingface.co/datasets/PeacefulData/SINE?fbclid=IwZXh0bgNhZW0CMTEAAR76639rdbuEGyDN7nV4BqZw7I8kdjSERUSETLrTq5Kkh65mWhgTLsWRLU3CXw_aem_hkjpfI3XlM4mU4E3EkCcHg
+
 ## 🔧 Model Architecture Configuration
 
 - **22-1st for 3-class Classification**  
