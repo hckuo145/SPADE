@@ -1,0 +1,95 @@
+exp_path: 'exp'
+
+train_dataset_args:
+    data_path : '/home/hckuo/SPADE/data'
+    data_list : '/home/hckuo/SPADE/data/VoiceNoNG/medium-v3-unet-500k/train_3class_all.txt'
+    frame_size: 400
+    frame_rate: 320
+
+valid_VN_redit_dataset_args:
+    data_path : '/home/hckuo/SPADE/data'
+    data_list : '/home/hckuo/SPADE/data/VoiceNoNG/medium-v3-unet-500k/valid_3class_redit_real.txt'
+    frame_size: 400
+    frame_rate: 320
+valid_VN_edit_dataset_args:
+    data_path : '/home/hckuo/SPADE/data'
+    data_list : '/home/hckuo/SPADE/data/VoiceNoNG/medium-v3-unet-500k/valid_3class_edit_resyn.txt'
+    frame_size: 400
+    frame_rate: 320
+valid_VC_edit_dataset_args:
+    data_path : '/home/hckuo/SPADE/data'
+    data_list : '/home/hckuo/SPADE/data/VoiceCraft/medium-v3/valid_3class_edit_resyn.txt'
+    frame_size: 400
+    frame_rate: 320
+# valid_PE_dataset_args:
+#     data_path : '/home/hckuo/SPADE/data'
+#     data_list : '/home/hckuo/SPADE/data/PseudoEdit/medium-v3/valid_3class_all.txt'
+#     frame_size: 400
+#     frame_rate: 320
+
+test_VN_redit_dataset_args:
+    data_path : '/home/hckuo/SPADE/data'
+    data_list : '/home/hckuo/SPADE/data/VoiceNoNG/medium-v3-unet-500k/test_3class_redit_real.txt'
+    frame_size: 400
+    frame_rate: 320
+test_VN_edit_dataset_args:
+    data_path : '/home/hckuo/SPADE/data'
+    data_list : '/home/hckuo/SPADE/data/VoiceNoNG/medium-v3-unet-500k/test_3class_edit_resyn.txt'
+    frame_size: 400
+    frame_rate: 320
+test_VC_edit_dataset_args:
+    data_path : '/home/hckuo/SPADE/data'
+    data_list : '/home/hckuo/SPADE/data/VoiceCraft/medium-v3/test_3class_edit_resyn.txt'
+    frame_size: 400
+    frame_rate: 320
+# test_PE_dataset_args:
+#     data_path : '/home/hckuo/SPADE/data'
+#     data_list : '/home/hckuo/SPADE/data/PseudoEdit/medium-v3/test_3class_all.txt'
+#     frame_size: 400
+#     frame_rate: 320
+
+frame_loss:
+    name: CrossEntropyLoss
+    args: {'weight': !!python/object/apply:torch.tensor [[0.6895, 0.6895, 10.0676]]}
+
+utter_loss:
+    name: CrossEntropyLoss
+    args: {'weight': !!python/object/apply:torch.tensor [[1.3333, 1.3333, 0.6667]]}
+
+optim:
+    name: 'AdamW'
+    args: {'lr': 0.0001}
+
+monitor:
+    valid_VN_redit/frame_F1_edit:
+        mode: 'max'
+    valid_VN_redit/frame_F1:
+        mode: 'max'
+    valid_VN_redit/utter_A:
+        mode: 'max'
+    
+    valid_VN_edit/frame_F1_edit:
+        mode: 'max'
+    valid_VN_edit/frame_F1:
+        mode: 'max'
+    valid_VN_edit/utter_A:
+        mode: 'max'
+    
+    valid_VC_edit/frame_F1_edit:
+        mode: 'max'
+    valid_VC_edit/frame_F1:
+        mode: 'max'
+    valid_VC_edit/utter_A:
+        mode: 'max'
+    
+    # valid_PE/frame_F1_edit:
+    #     mode: 'max'
+    # valid_PE/frame_F1:
+    #     mode: 'max'
+    # valid_PE/utter_A:
+    #     mode: 'max'
+save_best_only: True
+
+patience : 5
+min_epoch: 50
+max_epoch: -1
