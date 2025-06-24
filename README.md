@@ -81,6 +81,13 @@ cmd="--title ${exp_name} --model NaiveFCN --device cuda --batch 64  \
      --hyper_conf config/hyper/VoiceNoNG_2class_edit_real.yaml"
 
 python main_spade.py --train ${cmd}
+
+exp_name=NaiveFCN_2class-Wav2Vec2_ft-ASP+VoiceNoNG_2class_edit_real
+cmd="--title ${exp_name} --model NaiveFCN --device cuda --batch 64  \      
+     --model_conf config/model/NaiveFCN_2class-Wav2Vec2_ft-ASP.yaml \     
+     --hyper_conf config/hyper/VoiceNoNG_2class_edit_real.yaml      \
+     --paramas exp/${exp_name}/checkpoints/best_valid_frame_F1.pt"
+
 python main_spade.py --test ${cmd}
 ```
 
