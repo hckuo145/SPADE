@@ -28,32 +28,6 @@ class MSTFT(nn.Module):
         return feats
 
 
-class Wav2Vec2_randinit(nn.Module):
-    def __init__(self, weighted_sum=True, requires_grad=False):
-        super(Wav2Vec2_randinit, self).__init__()
-
-        self.extractor = torchaudio.models.wav2vec2_base()
-        self.extractor.requires_grad_(requires_grad)
-
-        if weighted_sum:
-            self.weights = nn.Parameter(torch.ones(12) / 12)
-        self.weighted_sum = weighted_sum
-
-    def forward(self, waves):
-        feats = self.extractor.extract_features(waves)[0]
-        
-        if self.weighted_sum:
-            feats = torch.stack(feats, dim=0)
-            feats = nn.functional.layer_norm(feats, (feats.size(-1),))
-            feats = torch.einsum('n, n b t h -> b t h', self.weights.softmax(dim=-1), feats)
-
-        else:
-            feats = feats[-1]
-            feats = nn.functional.layer_norm(feats, (feats.size(-1),))
-
-        return feats
-
-
 class Wav2Vec2(nn.Module):
     def __init__(self, weighted_sum=True, requires_grad=False):
         super(Wav2Vec2, self).__init__()

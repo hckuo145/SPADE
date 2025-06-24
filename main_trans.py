@@ -193,7 +193,6 @@ class Runner():
                 self.metrics[f'{phase}/frame_A' ], self.metrics[f'{phase}/frame_P' ], self.metrics[f'{phase}/frame_R' ], self.metrics[f'{phase}/frame_F1'] = self.evaluate(frame_true, frame_pred)
                 self.metrics[f'{phase}/utter_TP'], self.metrics[f'{phase}/utter_FN'], self.metrics[f'{phase}/utter_FP'], self.metrics[f'{phase}/utter_TN'], \
                 self.metrics[f'{phase}/utter_A' ], self.metrics[f'{phase}/utter_P' ], self.metrics[f'{phase}/utter_R' ], self.metrics[f'{phase}/utter_F1'] = self.evaluate(utter_true, utter_pred)
-                self.metrics[f'{phase}/score'] = 0.7 * self.metrics[f'{phase}/frame_F1'] + 0.3 * self.metrics[f'{phase}/utter_A']
 
             self._display('Train', self.epoch)
             self._write_to_tensorboard(self.epoch)
@@ -238,10 +237,9 @@ class Runner():
         self.metrics['test/frame_A' ], self.metrics['test/frame_P' ], self.metrics['test/frame_R' ], self.metrics['test/frame_F1'] = self.evaluate(frame_true, frame_pred)
         self.metrics['test/utter_TP'], self.metrics['test/utter_FN'], self.metrics['test/utter_FP'], self.metrics['test/utter_TN'], \
         self.metrics['test/utter_A' ], self.metrics['test/utter_P' ], self.metrics['test/utter_R' ], self.metrics['test/utter_F1'] = self.evaluate(utter_true, utter_pred)
-        self.metrics['test/score'] = 0.7 * self.metrics['test/frame_F1'] + 0.3 * self.metrics['test/utter_A']
 
         self._display('Test')
-        print(self.metrics['test/frame_F1'], self.metrics['test/utter_A'], self.metrics['test/score'])
+        print(f'frame_F1: {self.metrics["test/frame_F1"]: 5.4f}, utter_A: {self.metrics["test/utter_A"]:5.4f}')
 
     @staticmethod
     def evaluate(y_true, y_pred):
@@ -305,8 +303,10 @@ if __name__ == '__main__':
 
     criterion = {
         'frame': get_criterion(args.frame_loss).to(device),
-        'dwsmp': get_criterion(args.dwsmp_loss).to(device),
-        'isolt': get_criterion(args.isolt_loss).to(device)
+        # 'dwsmp': get_criterion(args.dwsmp_loss).to(device),
+        # 'isolt': get_criterion(args.isolt_loss).to(device)
+        'dwsmp': get_criterion({'name': 'MultipleFrameLoss', 'args':{}}).to(device),
+        'isolt': get_criterion({'name': 'IsolatedFrameLoss', 'args':{'max_neighbors': 3}}).to(device)
     }
 
 
