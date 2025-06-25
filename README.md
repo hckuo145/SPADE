@@ -1,4 +1,4 @@
-# SPADE: SPoofed Area DEtecting
+# SPADE: SPoofed Area DEtection
 
 SPADE is a framework designed for detecting spoofed segments in partially fake audio. It supports both binary and ternary classification tasks across different model architectures and dataset configurations.
 
