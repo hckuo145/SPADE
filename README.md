@@ -7,19 +7,19 @@ dataset: https://huggingface.co/datasets/PeacefulData/SINE?fbclid=IwZXh0bgNhZW0C
 
 ## 🔧 Model Architecture Configuration
 
-- **22-1st for 3-class Classification**  
+- **ADD 22-1st for 3-class Classification**  
   `config/model/NaiveFCN_3class-Wav2Vec2_ft-ASP.yaml`
 
-- **22-1st for 2-class Classification**  
+- **ADD 22-1st for 2-class Classification**  
   `config/model/NaiveFCN_2class-Wav2Vec2_ft-ASP.yaml`
 
-- **22-2nd for 2-class Classification**  
+- **ADD 22-2nd for 2-class Classification**  
   `config/model/SEResNet34_base_2class-MSTFT-ASP.yaml`
 
-- **23-2nd for 2-class Classification**  
+- **ADD 23-2nd for 2-class Classification**  
   `config/model/Transsion_2class-MSTFT.yaml`
 
-- **23-3rd for 2-class Classification**  
+- **ADD 23-3rd for 2-class Classification**  
   `config/model/ConvGRU_2class-MSTFT.yaml`
 
 ## 📁 Dataset Scenario Configuration
@@ -65,10 +65,10 @@ Notes:
 
 ## 🧠 Main File for Each Model
 
-- `main_pseudo.py`: 3-class classification for 22-1st and 22-2nd
-- `main_spade.py`: 2-class classification for 22-1st and 22-2nd
-- `main_trans.py`: 2-class classification for 23-2nd
-- `main_crnn.py`: 2-class classification for 23-3rd
+- `main_pseudo.py`: 3-class classification for ADD 22-1st and 22-2nd
+- `main_spade.py`: 2-class classification for ADD 22-1st and 22-2nd
+- `main_trans.py`: 2-class classification for ADD 23-2nd
+- `main_crnn.py`: 2-class classification for ADD 23-3rd
 
 ## ▶️ Execute Instruction
 
