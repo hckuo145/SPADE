@@ -36,6 +36,33 @@ dataset: https://huggingface.co/datasets/PeacefulData/SINE?fbclid=IwZXh0bgNhZW0C
 - **real / resyn / edit (infill + paste)**  
   `config/hyper/VoiceNoNG_3class_all.yaml`
 
+Notes:
+1. In each dataset scenario configuration, please update the `data_path` field to your local directory path:
+   ```yaml
+   data_path: {{Your Path}}
+   ```
+2. The `data_list` field refers to a label file. All label files used in our experiments can be found in:
+   ```
+   data/VoiceNoNG/medium-v3-unet-500k
+   ```
+   If you wish to create your own subset, ensure the label format matches the following:
+
+   ```
+   {{filename}} {{segmentation prediction (T/F: genuine/spoofed)}} {{utterance prediction (1/0: genuine/spoofed)}}
+   ```
+
+   **Examples:**
+
+   - Genuine audio:
+     ```
+     dev_real_medium-2527-les_mis_vol01_0810_librivox_64kb_mp3-lesmiserables_vol1_58_hugo_64kb_34 0.00-6.20-T 1
+     ```
+   - Spoofed audio:
+     ```
+     dev_edit_medium-10179-kalevala_lonnrot_1608_librivox_64kb_mp3-kalevala_33_lonnrot_64kb_11 0.00-0.94-T/0.94-1.40-F/1.40-6.48-T 0
+     ```
+     For the above spoofed audio, the fake segment lies between **0.94 and 1.40 seconds**.
+
 ## 🧠 Main File for Each Model
 
 - `main_pseudo.py`: 3-class classification for 22-1st and 22-2nd
